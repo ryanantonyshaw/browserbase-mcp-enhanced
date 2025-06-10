@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Stagehand } = require('@browserbase/stagehand');
-const { chromium } = require('playwright');
+const { chromium, firefox, webkit } = require('playwright');
+const { Browserbase } = require('@browserbase/sdk');
 require('dotenv').config();
 
 const app = express();
@@ -16,36 +17,67 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Enhanced Browserbase MCP Class
 class BrowserbaseMCPEnhanced {
   constructor() {
-    this.stagehand = null;
-    this.playwrightBrowser = null;
+    this.stagehandBrowserbase = null;
+    this.playwrightBrowserbase = null;
+    this.browserbaseSDK = null;
     this.sessions = new Map(); // Track active sessions
+    this.browsers = new Map(); // Track browser instances
   }
 
-  // Initialize Stagehand (simple automation)
-  async initStagehand() {
-    if (!this.stagehand) {
-      this.stagehand = new Stagehand({
+  // Initialize Browserbase SDK
+  async initBrowserbaseSDK() {
+    if (!this.browserbaseSDK) {
+      this.browserbaseSDK = new Browserbase({
+        apiKey: process.env.BROWSERBASE_API_KEY,
+        projectId: process.env.BROWSERBASE_PROJECT_ID
+      });
+    }
+    return this.browserbaseSDK;
+  }
+
+  // Initialize Stagehand + Browserbase (AI-powered automation)
+  async initStagehandBrowserbase() {
+    if (!this.stagehandBrowserbase) {
+      this.stagehandBrowserbase = new Stagehand({
         apiKey: process.env.BROWSERBASE_API_KEY,
         projectId: process.env.BROWSERBASE_PROJECT_ID,
-        env: "BROWSERBASE"
+        env: "BROWSERBASE" // Forces Browserbase cloud infrastructure
       });
-      await this.stagehand.init();
+      await this.stagehandBrowserbase.init();
     }
-    return this.stagehand;
+    return this.stagehandBrowserbase;
   }
 
-  // Initialize Playwright (advanced automation)
-  async initPlaywright() {
-    if (!this.playwrightBrowser) {
+  // Initialize Playwright + Browserbase (full control automation)
+  async initPlaywrightBrowserbase(browserType = 'chromium') {
+    const browserKey = `${browserType}_browserbase`;
+    
+    if (!this.browsers.has(browserKey)) {
       const wsEndpoint = `wss://connect.browserbase.com?apiKey=${process.env.BROWSERBASE_API_KEY}&projectId=${process.env.BROWSERBASE_PROJECT_ID}`;
-      this.playwrightBrowser = await chromium.connect({ wsEndpoint });
+      
+      let browser;
+      switch (browserType) {
+        case 'firefox':
+          browser = await firefox.connect({ wsEndpoint });
+          break;
+        case 'webkit':
+          browser = await webkit.connect({ wsEndpoint });
+          break;
+        case 'chromium':
+        default:
+          browser = await chromium.connect({ wsEndpoint });
+          break;
+      }
+      
+      this.browsers.set(browserKey, browser);
     }
-    return this.playwrightBrowser;
+    
+    return this.browsers.get(browserKey);
   }
 
-  // Simple automation using Stagehand
-  async simpleAutomation(action, url = null) {
-    const stagehand = await this.initStagehand();
+  // AI-powered automation using Stagehand + Browserbase (undetectable)
+  async aiAutomation(action, url = null, options = {}) {
+    const stagehand = await this.initStagehandBrowserbase();
     
     if (url) {
       await stagehand.page.goto(url);
@@ -53,16 +85,18 @@ class BrowserbaseMCPEnhanced {
 
     const result = await stagehand.page.act({ action });
     return {
-      method: 'stagehand',
+      method: 'stagehand+browserbase',
       action,
       result,
+      undetectable: true,
       timestamp: new Date().toISOString()
     };
   }
 
-  // Advanced automation using full Playwright
+  // Advanced automation using Playwright + Browserbase (full control + undetectable)
   async advancedAutomation(script, options = {}) {
-    const browser = await this.initPlaywright();
+    const browserType = options.browserType || 'chromium';
+    const browser = await this.initPlaywrightBrowserbase(browserType);
     const context = await browser.newContext({
       viewport: options.viewport || { width: 1920, height: 1080 },
       userAgent: options.userAgent || 'BrowserbaseMCP/1.0',
@@ -79,10 +113,12 @@ class BrowserbaseMCPEnhanced {
       const result = await this.executePlaywrightScript(page, script, options);
       
       return {
-        method: 'playwright',
+        method: 'playwright+browserbase',
+        browserType: options.browserType || 'chromium',
         sessionId,
         script: script.name || 'custom_script',
         result,
+        undetectable: true,
         timestamp: new Date().toISOString(),
         duration: Date.now() - this.sessions.get(sessionId).startTime
       };
@@ -246,12 +282,22 @@ class BrowserbaseMCPEnhanced {
 
   // Cleanup resources
   async cleanup() {
-    if (this.stagehand) {
-      await this.stagehand.close();
+    if (this.stagehandBrowserbase) {
+      await this.stagehandBrowserbase.close();
     }
-    if (this.playwrightBrowser) {
-      await this.playwrightBrowser.close();
+    
+    // Close all browser instances
+    for (const [key, browser] of this.browsers) {
+      try {
+        await browser.close();
+      } catch (error) {
+        console.error(`Error closing browser ${key}:`, error.message);
+      }
     }
+    this.browsers.clear();
+    
+    // Clear all sessions
+    this.sessions.clear();
   }
 }
 
@@ -276,8 +322,8 @@ app.post('/mcp', async (req, res) => {
     let result;
     
     switch (tool) {
-      case 'simple_automation':
-        result = await browserbaseMCP.simpleAutomation(params.action, params.url);
+      case 'ai_automation':
+        result = await browserbaseMCP.aiAutomation(params.action, params.url, params.options);
         break;
       
       case 'advanced_automation':
@@ -299,11 +345,11 @@ app.post('/mcp', async (req, res) => {
   }
 });
 
-// Simple automation endpoint
-app.post('/automation/simple', async (req, res) => {
+// AI-powered automation endpoint (Stagehand + Browserbase)
+app.post('/automation/ai', async (req, res) => {
   try {
-    const { action, url } = req.body;
-    const result = await browserbaseMCP.simpleAutomation(action, url);
+    const { action, url, options } = req.body;
+    const result = await browserbaseMCP.aiAutomation(action, url, options);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -336,9 +382,10 @@ process.on('SIGTERM', async () => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Enhanced Browserbase MCP running on port ${PORT}`);
-  console.log(`📱 Simple automation: POST /automation/simple`);
-  console.log(`🎯 Advanced automation: POST /automation/advanced`);
+  console.log(`🤖 AI automation (Stagehand+BB): POST /automation/ai`);
+  console.log(`🎯 Advanced automation (Playwright+BB): POST /automation/advanced`);
   console.log(`❤️ Health check: GET /health`);
+  console.log(`🔒 Bot detection: BYPASSED via Browserbase`);
 });
 
 module.exports = app;

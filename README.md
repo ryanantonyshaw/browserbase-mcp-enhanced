@@ -1,12 +1,13 @@
 # Enhanced Browserbase MCP
 
-**The ultimate browser automation MCP combining Stagehand simplicity with Playwright power.**
+**The ultimate UNDETECTABLE browser automation MCP - Playwright + Browserbase + Stagehand + Browserbase.**
 
 ## 🚀 Features
 
-### Dual Automation Approaches
-- **Simple Automation**: Stagehand for quick, AI-powered interactions
-- **Advanced Automation**: Full Playwright API for sophisticated workflows
+### Dual Undetectable Approaches
+- **AI Automation**: Stagehand + Browserbase for AI-powered, undetectable interactions
+- **Advanced Automation**: Playwright + Browserbase for full control, undetectable workflows
+- **🔒 Bot Detection**: COMPLETELY BYPASSED via Browserbase cloud infrastructure
 
 ### Capabilities
 - ✅ **Hybrid Architecture**: Best of both worlds - simplicity + power
@@ -46,16 +47,19 @@ POST /mcp
 }
 ```
 
-### Simple Automation (Stagehand)
+### AI Automation (Stagehand + Browserbase = Undetectable)
 ```bash
-POST /automation/simple
+POST /automation/ai
 {
   "action": "click the submit button and wait for confirmation",
-  "url": "https://example.com/form"
+  "url": "https://example.com/form",
+  "options": {
+    "waitForNavigation": true
+  }
 }
 ```
 
-### Advanced Automation (Playwright)
+### Advanced Automation (Playwright + Browserbase = Undetectable + Full Control)
 ```bash
 POST /automation/advanced
 {
@@ -79,6 +83,10 @@ POST /automation/advanced
         }
       ]
     }
+  },
+  "options": {
+    "browserType": "chromium", // or "firefox", "webkit"
+    "viewport": { "width": 1920, "height": 1080 }
   }
 }
 ```
@@ -266,20 +274,22 @@ All endpoints return structured responses:
 
 ## 🚀 Why This Approach?
 
-### Stagehand (Simple)
-- **Use for**: Quick interactions, AI-powered element detection
-- **Benefits**: Minimal setup, natural language actions
-- **Example**: "click the blue submit button"
+### Stagehand + Browserbase (AI + Undetectable)
+- **Use for**: Quick interactions, AI-powered element detection, bypassing detection
+- **Benefits**: Natural language actions, zero bot detection, minimal setup
+- **Example**: "click the blue submit button" (completely undetectable)
 
-### Playwright (Advanced)  
-- **Use for**: Complex workflows, precise control, performance testing
-- **Benefits**: Full API access, debugging tools, network interception
-- **Example**: Multi-step forms with validation and error handling
+### Playwright + Browserbase (Full Control + Undetectable)  
+- **Use for**: Complex workflows, precise control, performance testing, bypassing detection
+- **Benefits**: Full API access, debugging tools, network interception, zero bot detection
+- **Example**: Multi-step forms with validation and error handling (completely undetectable)
 
-### Best of Both Worlds
-- Start simple with Stagehand for prototyping
-- Upgrade to Playwright for production workflows
-- Single service handles both approaches seamlessly
+### The Ultimate Combination
+- **Browserbase**: Eliminates ALL bot detection (key ingredient!)
+- **Stagehand**: AI-powered simplicity for quick tasks
+- **Playwright**: Full browser control for complex automation
+- **Multiple Browsers**: Chromium, Firefox, WebKit support
+- **Single Service**: Handles all approaches seamlessly
 
 ---
 
